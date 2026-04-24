@@ -1,6 +1,7 @@
 import os
 import requests
 from flask import Flask, request, jsonify
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -20,16 +21,27 @@ def webhook():
     prices = data.get("trigger_prices", "").split(",")
     triggered_at = data.get("triggered_at", "")
 
+    # Format date like "Mon 24 Apr"
+    now = datetime.now()
+    date_str = now.strftime("%a %d %b")
+
+    # Pair each stock with its price
     lines = []
     for stock, price in zip(stocks, prices):
-        lines.append(f"  {stock.strip():<15} ₹{price.strip()}")
+        try:
+            formatted_price = f"{float(price.strip()):,.2f}"
+        except:
+            formatted_price = price.strip()
+        lines.append(f"📈 `{stock.strip():<12}` ₹{formatted_price}")
 
     message = (
-        f"📈 *{scan_name}*\n"
-        f"━━━━━━━━━━━━━━━\n"
+        f"🚨 *ALERT TRIGGERED* 🚨\n"
+        f"━━━━━━━━━━━━━━━━━━━\n"
+        f"📌 Scan  : {scan_name}\n"
+        f"━━━━━━━━━━━━━━━━━━━\n"
         + "\n".join(lines) +
-        f"\n━━━━━━━━━━━━━━━\n"
-        f"🕐 {triggered_at}"
+        f"\n━━━━━━━━━━━━━━━━━━━\n"
+        f"🕐 {triggered_at}  •  {date_str}"
     )
 
     requests.post(
